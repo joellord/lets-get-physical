@@ -1,0 +1,85 @@
+<html>
+<body>
+
+<button type="button" id="trigger">Go!</button>
+
+<div id="chart"></div>
+
+<div id="rawdata"></div>
+
+<p>
+<!-- Load c3.css -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.11/c3.min.css" rel="stylesheet" type="text/css">
+
+<!-- Load d3.js and c3.js -->
+<script src="vendor/d3.js"></script>
+<script src="vendor/c3.js"></script>
+
+<script type="text/javascript" src="./heartSensor.js"></script>
+<script type="text/javascript">
+
+var hrHistory = ['bpm'];
+var xAxis = ['time'];
+
+
+var chart = c3.generate({
+    data: {
+        x: 'time',
+        columns: [
+            xAxis,
+            hrHistory
+        ]
+    },
+    axis : {
+        x : {
+            type : 'timeseries',
+            tick: {
+                format: function (x) { 
+                  var formattedTime = x.getHours();
+                  formattedTime += ":";
+                  formattedTime += (x.getMinutes() < 10) ? "0" + x.getMinutes() : x.getMinutes();
+                  formattedTime += ":";
+                  formattedTime += (x.getSeconds() < 10) ? "0" + x.getSeconds() : x.getSeconds();
+                  return formattedTime;
+               }
+            }
+        }
+    }
+});
+
+
+var btn = document.querySelector("#trigger");
+var heartRateSensor = new HeartSensor();
+
+heartRateSensor.onHeartRateChanged(function(e, bpm) {
+  var timestamp = (new Date());
+  var seconds = timestamp.getSeconds();
+  if (seconds % 15 === 0) {
+    hrHistory.push(bpm);
+    xAxis.push(timestamp.getTime());
+    chart.load({
+      columns: [
+        xAxis,
+        hrHistory
+      ]
+    });
+  }
+  var container = document.getElementById('rawdata');
+  var newData = document.createElement('p');
+  var text = document.createTextNode((new Date()).toString() + ": " + bpm);
+  newData.appendChild(text); 
+  container.insertBefore(newData, container.firstChild);
+  var nodelist = document.querySelectorAll("#rawdata p");
+  var nodelistLength = [].slice.call(nodelist, 0).length;
+  for (var i = nodelistLength - 1; i > 10; i--) {
+    var e = nodelist[i];
+    e.parentElement.removeChild(e);
+  }
+});
+
+btn.addEventListener("click", function() {heartRateSensor.connect();});
+
+</script>
+
+</body>
+</html>
